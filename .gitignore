@@ -1,0 +1,6 @@
+# remove virtual environments
+.venv
+venv
+
+# PyCharm folder
+.idea
