@@ -4,3 +4,6 @@ venv
 
 # PyCharm folder
 .idea
+
+# db files
+*.db
