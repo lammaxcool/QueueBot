@@ -1,7 +1,7 @@
 import config
 import telebot
 import data
-from data import User, Queue
+from data import User, Queue, UserQueue
 import re
 
 
@@ -22,9 +22,10 @@ def handler(message):
             bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
 
         elif command[0] == '/addme':
-            Queue.find_by_name(conn, command[1])
-            User(message.from_user.username, message.from_user.id)
-
+            id = Queue.find_by_name(conn, command[1])
+            if id:
+                User(message.from_user.username, message.from_user.id).insert(conn)
+                UserQueue(message.from_user.id, id[0], message.date).insert(conn)
 
     except AttributeError:
         pattern = r'/\w+'
@@ -43,25 +44,6 @@ def handler(message):
             print('bad command')
 
     conn.close()
-    # if message.text == '/help':
-    #     bot.send_message(message.chat.id, 'Hi!\nCommands:\n'
-    #                                       '/new - create new queue\n'
-    #                                       '/all - show active queues')
-    #
-    # elif message.text == '/new':
-    #     bot.send_message(message.chat.id, "Type queue name")
-    #     bot.register_next_step_handler(message, create_queue)
-    #
-    # elif message.text == '/all':
-    #     bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
-    #
-    # else:
-    #     bot.send_message(message.chat.id, 'I can\'t understand you :(\nTry /help')
-
-
-# def create_queue(message):
-#     Queue(message.text, message.chat.id).insert(conn)
-#     bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
 
 
 if __name__ == '__main__':

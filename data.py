@@ -50,9 +50,29 @@ class Queue:
     def find_by_name(cls, conn, name):
         try:
             c = conn.cursor()
-            res = c.execute(''' EXISTS (SELECT id FROM queues WHERE ? = queues.name)''', name)
+            res = []
+            for name in c.execute(''' SELECT id FROM queues WHERE ? = queues.name ''', (name, )):
+                res.append(name[0])
+
             return res
 
+        except Error as e:
+            print(e)
+
+
+class UserQueue:
+    def __init__(self, user_id, queue_id, date):
+        self.user_id = user_id
+        self.queue_id = queue_id
+        self.date = date
+
+    def insert(self, conn):
+        try:
+            c = conn.cursor()
+            c.execute('''
+            INSERT INTO user_queue(user_id, queue_id, date) VALUES (?, ?, ?)
+            ''', (self.user_id, self.queue_id, self.date))
+            conn.commit()
         except Error as e:
             print(e)
 
@@ -67,7 +87,7 @@ def create_connection(db_file):
     conn = None
     try:
         conn = sqlite3.connect(db_file)
-        print('sqlite3 version: ', sqlite3.version)
+        # print('sqlite3 version: ', sqlite3.version)
     except Error as e:
         print(e)
 
@@ -96,7 +116,7 @@ def init_db(conn):
         queries.append(''' 
         CREATE TABLE IF NOT EXISTS queues(
             id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
+            "name" TEXT UNIQUE NOT NULL ,
             chat_id INTEGER NOT NULL
         )
         ''')
@@ -114,6 +134,7 @@ def init_db(conn):
             id INTEGER PRIMARY KEY,
             queue_id INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
+            "date" INTEGER,
             FOREIGN KEY (queue_id) REFERENCES queue (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
