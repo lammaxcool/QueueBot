@@ -1,18 +1,26 @@
 import sqlite3
 from sqlite3 import Error
 import config
+import traceback
+
+
+class SQLiteError(Exception):
+    ''' Raise an error with sqlite3 error '''
+    pass
 
 
 class User:
-    def __init__(self, username, user_id):
+    def __init__(self, first_name, last_name, username, user_id):
         self.username = username
         self.user_id = user_id
+        self.first_name = first_name
+        self.last_name = last_name
 
     def insert(self, conn):
         try:
             c = conn.cursor()
             c.execute('''
-            INSERT INTO users(username, user_id) VALUES (?, ?)
+            INSERT INTO users(first_name, last_name, username, user_id) VALUES ( ?, ?, ?)
             ''', (self.username, self.user_id))
         except Error as e:
             print(e)
@@ -30,6 +38,30 @@ class Queue:
             INSERT INTO queues(name, chat_id) VALUES (?, ?)
             ''', (self.name, self.chat_id))
             conn.commit()
+        except Error as e:
+            print(e)
+
+    @classmethod
+    def show_members(cls, conn, id):
+        try:
+            c = conn.cursor()
+            res = ''
+            # get queue name
+            for name in c.execute(''' SELECT name FROM queues q WHERE ? = q.id''', (int(id),)):
+                res += name[0] + ':\n'
+                break
+
+            # get members
+            for user in c.execute('''
+            SELECT u.first_name, u.last_name, u.username FROM (
+                users JOIN user_queue q on users.user_id = q.user_id
+                ) u WHERE u.user_id IN (
+                    SELECT uq.user_id FROM user_queue uq WHERE uq.queue_id = ?
+                ) ORDER BY u.date
+            ''', (int(id), )):
+                res += user[0] + ' ' + user[1] + '(@' + user[2] + ')\n'
+
+            return res
         except Error as e:
             print(e)
 
@@ -54,7 +86,7 @@ class Queue:
             for name in c.execute(''' SELECT id FROM queues WHERE ? = queues.name ''', (name, )):
                 res.append(name[0])
 
-            return res
+            return res[0] if res else None
 
         except Error as e:
             print(e)
@@ -116,16 +148,17 @@ def init_db(conn):
         queries.append(''' 
         CREATE TABLE IF NOT EXISTS queues(
             id INTEGER PRIMARY KEY,
-            "name" TEXT UNIQUE NOT NULL ,
+            name TEXT UNIQUE NOT NULL,
             chat_id INTEGER NOT NULL
         )
         ''')
         # users
         queries.append(''' 
         CREATE TABLE IF NOT EXISTS users(
-            id INTEGER PRIMARY KEY,
-            username TEXT NOT NULL,
-            user_id INTEGER NOT NULL
+            user_id INTEGER PRIMARY KEY,
+            first_name TEXT,
+            last_name TEXT,
+            username TEXT NOT NULL
         )
         ''')
         # user_queue
@@ -134,9 +167,9 @@ def init_db(conn):
             id INTEGER PRIMARY KEY,
             queue_id INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
-            "date" INTEGER,
-            FOREIGN KEY (queue_id) REFERENCES queue (id),
-            FOREIGN KEY (user_id) REFERENCES users (id)
+            date INTEGER NOT NULL,
+            FOREIGN KEY (queue_id) REFERENCES queues (id),
+            FOREIGN KEY (user_id) REFERENCES users (user_id)
         )
         ''')
 

@@ -22,10 +22,22 @@ def handler(message):
             bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
 
         elif command[0] == '/addme':
-            id = Queue.find_by_name(conn, command[1])
-            if id:
-                User(message.from_user.username, message.from_user.id).insert(conn)
-                UserQueue(message.from_user.id, id[0], message.date).insert(conn)
+            queue_id = Queue.find_by_name(conn, command[1])
+            if queue_id:
+                User(message.from_user.first_name,
+                     message.from_user.last_name,
+                     message.from_user.username,
+                     message.from_user.id).insert(conn)
+                UserQueue(message.from_user.id, queue_id, message.date).insert(conn)
+            else:
+                bot.send_message(message.chat.id, 'There is no queue named "{}"'.format(command[1]))
+
+        elif command[0] == '/show':
+            queue_id = Queue.find_by_name(conn, command[1])
+            if queue_id:
+                bot.send_message(message.chat.id, Queue.show_members(conn, queue_id))
+            else:
+                bot.send_message(message.chat.id, 'There is no queue named "{}"'.format(command[1]))
 
     except AttributeError:
         pattern = r'/\w+'
@@ -34,8 +46,11 @@ def handler(message):
 
             if command == '/help':
                 bot.send_message(message.chat.id, 'Hi!\nCommands:\n'
-                                                  '/new - create new queue\n'
-                                                  '/all - show active queues')
+                                                  '/new "name" - create new queue\n'
+                                                  '/all - show active queues\n'
+                                                  '/addme "queue name" - add me to queue\n'
+                                                  '/show "queue name" - show queue members'
+                                 )
 
             elif command == '/all':
                 bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
