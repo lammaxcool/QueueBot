@@ -22,8 +22,8 @@ class User:
             c.execute('''
             INSERT INTO users(first_name, last_name, username, user_id) VALUES ( ?, ?, ?)
             ''', (self.username, self.user_id))
-        except Error as e:
-            print(e)
+        except Error:
+            print(traceback.format_exc())
 
 
 class Queue:
@@ -38,8 +38,8 @@ class Queue:
             INSERT INTO queues(name, chat_id) VALUES (?, ?)
             ''', (self.name, self.chat_id))
             conn.commit()
-        except Error as e:
-            print(e)
+        except Error:
+            print(traceback.format_exc())
 
     @classmethod
     def show_members(cls, conn, id):
@@ -62,8 +62,8 @@ class Queue:
                 res += user[0] + ' ' + user[1] + '(@' + user[2] + ')\n'
 
             return res
-        except Error as e:
-            print(e)
+        except Error:
+            print(traceback.format_exc())
 
     @classmethod
     def enumerate_queues(cls, conn):
@@ -75,8 +75,8 @@ class Queue:
 
             return res
 
-        except Error as e:
-            print(e)
+        except Error:
+            print(traceback.format_exc())
 
     @classmethod
     def find_by_name(cls, conn, name):
@@ -88,8 +88,8 @@ class Queue:
 
             return res[0] if res else None
 
-        except Error as e:
-            print(e)
+        except Error:
+            print(traceback.format_exc())
 
 
 class UserQueue:
@@ -105,8 +105,8 @@ class UserQueue:
             INSERT INTO user_queue(user_id, queue_id, date) VALUES (?, ?, ?)
             ''', (self.user_id, self.queue_id, self.date))
             conn.commit()
-        except Error as e:
-            print(e)
+        except Error:
+            print(traceback.format_exc())
 
 
 def create_connection(db_file):
@@ -120,8 +120,8 @@ def create_connection(db_file):
     try:
         conn = sqlite3.connect(db_file)
         # print('sqlite3 version: ', sqlite3.version)
-    except Error as e:
-        print(e)
+    except Error:
+            print(traceback.format_exc())
 
     return conn
 
@@ -137,8 +137,8 @@ def create_table(conn, query):
     try:
         c = conn.cursor()
         c.execute(query)
-    except Error as e:
-        print(e)
+    except Error:
+            print(traceback.format_exc())
 
 
 def init_db(conn):
