@@ -20,8 +20,8 @@ class User:
         try:
             c = conn.cursor()
             c.execute('''
-            INSERT INTO users(first_name, last_name, username, user_id) VALUES ( ?, ?, ?)
-            ''', (self.username, self.user_id))
+            INSERT OR IGNORE INTO users(first_name, last_name, username, user_id) VALUES (?, ?, ?, ?)
+            ''', (self.first_name, self.last_name, self.username, self.user_id))
         except Error:
             print(traceback.format_exc())
 
@@ -59,7 +59,8 @@ class Queue:
                     SELECT uq.user_id FROM user_queue uq WHERE uq.queue_id = ?
                 ) ORDER BY u.date
             ''', (int(id), )):
-                res += user[0] + ' ' + user[1] + '(@' + user[2] + ')\n'
+                res += (user[0] + ' ' if user[0] else '')\
+                       + (user[1] if user[1] else '') + ' (@' + user[2] + ')\n'
 
             return res
         except Error:

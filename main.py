@@ -27,7 +27,8 @@ def handler(message):
                 User(message.from_user.first_name,
                      message.from_user.last_name,
                      message.from_user.username,
-                     message.from_user.id).insert(conn)
+                     message.from_user.id
+                     ).insert(conn)
                 UserQueue(message.from_user.id, queue_id, message.date).insert(conn)
             else:
                 bot.send_message(message.chat.id, 'There is no queue named "{}"'.format(command[1]))
@@ -56,7 +57,8 @@ def handler(message):
                 bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
 
         except AttributeError:
-            print('bad command')
+            # print('bad command')
+            pass
 
     conn.close()
 
