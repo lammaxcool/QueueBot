@@ -5,60 +5,88 @@ from data import User, Queue, UserQueue
 import re
 
 
-bot = telebot.TeleBot(config.ACCESS_TOKEN)
+BOT = telebot.TeleBot(config.ACCESS_TOKEN)
 conn = data.CONN
 
 
-@bot.message_handler(content_types=['text'])
+class Handler:
+    def __init__(self, conn, chat_id):
+        self.conn = conn
+        self.chat_id = chat_id
+
+    def new(self, queue_name):
+        Queue(queue_name, self.chat_id).insert(self.conn)
+        BOT.send_message(self.chat_id, Queue.enumerate_queues(self.conn))
+
+    def addme(self, queue_name, first_name, last_name, username, user_id, date):
+        queue_id = Queue.find_by_name(conn, queue_name)
+        if queue_id:
+            User(first_name,
+                 last_name,
+                 username,
+                 user_id
+                 ).insert(conn)
+            UserQueue(user_id, queue_id, date).insert(self.conn)
+        else:
+            BOT.send_message(self.chat_id, 'There is no queue named "{}"'.format(queue_name))
+
+    def show(self, queue_name):
+        queue_id = Queue.find_by_name(self.conn, queue_name)
+        if queue_id:
+            BOT.send_message(self.chat_id, Queue.show_members(conn, queue_id))
+        else:
+            BOT.send_message(self.chat_id, 'There is no queue named "{}"'.format(queue_name))
+
+    def all(self):
+        BOT.send_message(self.chat_id, Queue.enumerate_queues(conn))
+
+    def help(self):
+        BOT.send_message(self.chat_id, 'Hi!\nCommands:\n'
+                                       '/new "name" - create new queue\n'
+                                       '/all - show active queues\n'
+                                       '/addme "queue name" - add me to queue\n'
+                                       '/show "queue name" - show queue members')
+
+
+@BOT.message_handler(content_types=['text'])
 def handler(message):
     conn = data.create_connection(config.DB_NAME)
+    h = Handler(conn, message.chat.id)
 
-    pattern = r'/\w+ \w+'
-    try:
-        command = re.search(pattern, message.text).group().split(' ')
+    # if there is any command in the message
+    pattern = r'/\w+'
+    if re.search(pattern, message.text):
+        # search double word command
+        pattern = r'/\w+ \w+'
+        command = re.search(pattern, message.text)
+        if command:
+            command = command.group().split(' ')
+            if command[0] == '/new':
+                h.new(command[1])
 
-        if command[0] == '/new':
-            Queue(command[1], message.chat.id).insert(conn)
-            bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
+            elif command[0] == '/addme':
+                h.addme(command[1],
+                        message.from_user.first_name,
+                        message.from_user.last_name,
+                        message.from_user.username,
+                        message.from_user.id,
+                        message.date)
 
-        elif command[0] == '/addme':
-            queue_id = Queue.find_by_name(conn, command[1])
-            if queue_id:
-                User(message.from_user.first_name,
-                     message.from_user.last_name,
-                     message.from_user.username,
-                     message.from_user.id
-                     ).insert(conn)
-                UserQueue(message.from_user.id, queue_id, message.date).insert(conn)
-            else:
-                bot.send_message(message.chat.id, 'There is no queue named "{}"'.format(command[1]))
+            elif command[0] == '/show':
+                h.show(command[1])
 
-        elif command[0] == '/show':
-            queue_id = Queue.find_by_name(conn, command[1])
-            if queue_id:
-                bot.send_message(message.chat.id, Queue.show_members(conn, queue_id))
-            else:
-                bot.send_message(message.chat.id, 'There is no queue named "{}"'.format(command[1]))
-
-    except AttributeError:
-        pattern = r'/\w+'
-        try:
+        else:
+            # search single word command
+            pattern = r'/\w+'
             command = re.search(pattern, message.text).group()
-
             if command == '/help':
-                bot.send_message(message.chat.id, 'Hi!\nCommands:\n'
-                                                  '/new "name" - create new queue\n'
-                                                  '/all - show active queues\n'
-                                                  '/addme "queue name" - add me to queue\n'
-                                                  '/show "queue name" - show queue members'
-                                 )
+                h.help()
 
             elif command == '/all':
-                bot.send_message(message.chat.id, Queue.enumerate_queues(conn))
+                h.all()
 
-        except AttributeError:
-            # print('bad command')
-            pass
+            else:
+                print('bad command')
 
     conn.close()
 
@@ -66,4 +94,4 @@ def handler(message):
 if __name__ == '__main__':
     print('Hello, World!')
     data.init_db(conn)
-    bot.polling(none_stop=True, interval=0)
+    BOT.polling(none_stop=True, interval=0)
