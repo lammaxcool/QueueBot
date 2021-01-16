@@ -129,7 +129,7 @@ def create_connection(db_file):
 
 def create_table(conn, query):
     '''
-    create table from a sql query
+    exec from a sql query
     :param conn: connection to target db
     :param query: SQL query for creating table
     :return: None
@@ -139,7 +139,7 @@ def create_table(conn, query):
         c = conn.cursor()
         c.execute(query)
     except Error:
-            print(traceback.format_exc())
+        print(traceback.format_exc())
 
 
 def init_db(conn):
