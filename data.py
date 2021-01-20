@@ -63,8 +63,10 @@ class Queue:
             INSERT INTO queues(name, chat_id) VALUES (?, ?)
             ''', (self.name, self.chat_id))
             conn.commit()
+            return True
         except Error:
             print(traceback.format_exc())
+            return False
 
     @classmethod
     def show_members(cls, conn, id):
@@ -122,10 +124,16 @@ class Queue:
         id = Queue.find_by_name(conn, name)
         try:
             c = conn.cursor()
+            # delete from queues
             c.execute('''
             DELETE FROM queues
             WHERE id = ?
-            ''', (id,))
+            ''', (id, ))
+            # delete from user_queue
+            c.execute('''
+            DELETE FROM user_queue
+            WHERE queue_id = ?
+            ''', (id, ))
             conn.commit()
         except Error:
             print(traceback.format_exc())
@@ -245,7 +253,7 @@ class SQLite3Connection:
     '''
     def __init__(self, db_filename):
         self.conn = sqlite3.connect(db_filename)
-        print('Connection created')
+        # print('Connection created')
         # self.conn = None
         # try:
         #     self.conn = sqlite3.connect(db_filename)
@@ -255,7 +263,7 @@ class SQLite3Connection:
 
     def __del__(self):
         self.conn.close()
-        print('Connection destroyed')
+        # print('Connection destroyed')
 
     def cursor(self):
         return self.conn.cursor()

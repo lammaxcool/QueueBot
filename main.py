@@ -12,14 +12,26 @@ class Handler:
     def __init__(self, conn, chat_id):
         self.conn = conn
         self.chat_id = chat_id
-        print('Handler created')
+        # print('Handler created')
 
-    def __del__(self):
-        print('Handler destroyed')
+    # def __del__(self):
+    #     print('Handler destroyed')
 
     def new(self, queue_name):
-        Queue(queue_name, self.chat_id).insert(self.conn)
-        BOT.send_message(self.chat_id, Queue.enumerate_queues(self.conn))
+        status = Queue(queue_name, self.chat_id).insert(self.conn)
+        if status:
+            # BOT.send_message(self.chat_id, Queue.enumerate_queues(self.conn))
+            BOT.send_message(self.chat_id, 'Successfully added "{}"'.format(queue_name))
+        else:
+            BOT.send_message(self.chat_id, 'Something went wrong :(\n'
+                                           'Developer might be dumb...')
+
+    def remove(self, queue_name):
+        status = Queue.delete(self.conn, queue_name)
+        if status:
+            BOT.send_message(self.chat_id, 'Successfully removed "{}"'.format(queue_name))
+        else:
+            BOT.send_message(self.chat_id, 'There is no queue named "{}"'.format(queue_name))
 
     def addme(self, queue_name, first_name, last_name, username, user_id, date):
         queue_id = Queue.find_by_name(self.conn, queue_name)
@@ -67,11 +79,13 @@ class Handler:
 
     def help(self):
         BOT.send_message(self.chat_id, 'Hi!\nCommands:\n'
-                                       '/new "name" - create new queue\n'
+                                       '/new "queue name" - create new queue\n'
+                                       '/remove "queue name - remove queue\n"'                            
+                                       '/show "queue name" - show queue members\n'
                                        '/all - show active queues\n'
+                                       '\n'
                                        '/addme "queue name" - add me to queue\n'
-                                       '/delme "queue name" - delete me from queue\n'
-                                       '/show "queue name" - show queue members')
+                                       '/delme "queue name" - delete me from queue\n')
 
 
 @BOT.message_handler(content_types=['text'])
@@ -104,6 +118,9 @@ def handler(message):
             elif command[0] == '/delme':
                 h.delme(message.from_user.username, command[1])
 
+            elif command[0] == '/remove':
+                h.remove(command[1])
+
         else:
             # search single word command
             pattern = r'/\w+'
@@ -115,11 +132,13 @@ def handler(message):
                 h.all()
 
             else:
-                print('bad command')
+                BOT.send_message(h.chat_id, 'One of us is dumb :(\n'
+                                            'Try /help')
+                # print('bad command')
 
 
 if __name__ == '__main__':
-    print('Hello, World!')
+    print('Hello from QueueBot!')
     conn = SQLite3Connection(config.DB_NAME)
     data.init_db(conn)
     del conn
