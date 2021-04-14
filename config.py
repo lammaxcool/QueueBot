@@ -1,2 +1,0 @@
-ACCESS_TOKEN = '1448074269:AAGyHaYklfNjXE_SHcFfeot9cgSXykLW33M'
-DB_NAME = 'queue.db'
